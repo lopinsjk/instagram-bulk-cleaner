@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Instagram Bulk Cleaner</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap');
+    * { margin:0; padding:0; box-sizing:border-box; }
+    :root {
+      --bg:#0a0a0a; --surface:#141414; --surface2:#1e1e1e;
+      --border:#2a2a2a; --text:#f0f0f0; --muted:#777;
+      --accent:#e1306c; --accent2:#833ab4; --green:#22c55e; --yellow:#f59e0b;
+    }
+    body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--text); width:320px; }
+
+    .header {
+      padding:16px 18px 12px;
+      background:linear-gradient(135deg,#1a0a0e,#0d0a1a);
+      border-bottom:1px solid var(--border);
+      display:flex; align-items:center; gap:10px;
+    }
+    .logo { width:30px; height:30px; background:linear-gradient(45deg,#fd1d1d,#e1306c,#833ab4); border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:16px; }
+    .title { font-size:14px; font-weight:700; }
+    .sub   { font-size:11px; color:var(--muted); }
+    .dot   { width:7px; height:7px; border-radius:50%; background:var(--muted); margin-left:auto; transition:all .3s; }
+    .dot.ready   { background:var(--green); box-shadow:0 0 6px var(--green); }
+    .dot.running { background:var(--yellow); box-shadow:0 0 6px var(--yellow); animation:pulse 1s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+    .content { padding:14px 16px; }
+
+    .counter { text-align:center; margin-bottom:14px; }
+    .counter-num {
+      font-size:48px; font-weight:700; line-height:1;
+      background:linear-gradient(135deg,var(--accent),var(--accent2));
+      -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+    }
+    .counter-label { font-size:11px; color:var(--muted); margin-top:4px; text-transform:uppercase; letter-spacing:.5px; }
+
+    .row { margin-bottom:12px; }
+    .row-label { font-size:11px; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:.5px; margin-bottom:7px; display:flex; justify-content:space-between; }
+    .row-label span { color:var(--text); font-size:12px; text-transform:none; letter-spacing:0; font-weight:700; }
+    .opts { display:flex; gap:6px; }
+    .opt {
+      flex:1; padding:8px 0; background:var(--surface); border:1px solid var(--border);
+      border-radius:8px; color:var(--muted); font-size:11px; font-weight:600;
+      cursor:pointer; text-align:center; transition:all .2s; font-family:'DM Sans',sans-serif;
+    }
+    .opt:hover { border-color:#444; color:var(--text); }
+    .opt.active { background:var(--surface2); border-color:var(--accent); color:var(--accent); }
+
+    .btn-group { display:flex; flex-direction:column; gap:8px; margin-bottom:10px; }
+    .btn {
+      width:100%; padding:11px 16px; border-radius:10px; border:none;
+      cursor:pointer; font-family:'DM Sans',sans-serif; font-size:13px; font-weight:700;
+      display:flex; align-items:center; justify-content:center; gap:8px; transition:all .2s;
+    }
+    .btn:disabled { opacity:.4; cursor:not-allowed; }
+    .btn:active { transform:scale(.98); }
+    .btn-likes    { background:linear-gradient(135deg,#e1306c,#c13584); color:white; }
+    .btn-comments { background:linear-gradient(135deg,#405de6,#833ab4); color:white; }
+    .btn-untag    { background:linear-gradient(135deg,#f59e0b,#ea580c); color:white; }
+    .btn-stop     { background:var(--surface2); border:1px solid rgba(225,48,108,.4); color:var(--accent); font-size:12px; padding:9px; }
+
+    .log-header { font-size:10px; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:.5px; margin-bottom:6px; }
+    .log-box {
+      background:var(--surface); border:1px solid var(--border); border-radius:10px;
+      padding:10px; height:120px; overflow-y:auto; font-size:11px; line-height:1.7; color:var(--muted);
+    }
+    .log-box::-webkit-scrollbar { width:4px; }
+    .log-box::-webkit-scrollbar-thumb { background:var(--border); border-radius:4px; }
+    .log-line.success { color:var(--green); }
+    .log-line.error   { color:var(--accent); }
+    .log-line.info    { color:#60a5fa; }
+    .log-line.warn    { color:var(--yellow); }
+
+    .notice { margin:16px; padding:14px; background:var(--surface); border:1px solid var(--border); border-radius:12px; font-size:12px; color:var(--muted); line-height:1.7; text-align:center; }
+    .notice a { color:var(--accent); text-decoration:none; font-weight:600; }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">🧹</div>
+  <div>
+    <div class="title">Instagram Cleaner</div>
+    <div class="sub">Like e commenti — batch da 20</div>
+  </div>
+  <div class="dot" id="dot"></div>
+</div>
+
+<div id="notOnPage" class="notice" style="display:none">
+  Apri Instagram per usare l'estensione.<br/><br/>
+  <a href="https://www.instagram.com/your_activity/interactions/likes" target="_blank">→ Vai ai Mi piace</a>
+</div>
+
+<div class="content" id="mainContent">
+
+  <div class="counter">
+    <div class="counter-num" id="counterNum">0</div>
+    <div class="counter-label" id="counterLabel">elementi rimossi</div>
+  </div>
+
+  <div class="row">
+    <div class="row-label">Attesa tra batch <span id="waitLabel">30s</span></div>
+    <div class="opts">
+      <button class="opt" data-wait="20">20s</button>
+      <button class="opt active" data-wait="30">30s</button>
+      <button class="opt" data-wait="45">45s</button>
+      <button class="opt" data-wait="60">60s</button>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="row-label">Velocità selezione <span id="speedLabel">Normale</span></div>
+    <div class="opts">
+      <button class="opt" data-delay="2500" data-label="Sicuro">🐢 Sicuro</button>
+      <button class="opt active" data-delay="1200" data-label="Normale">⚡ Normale</button>
+      <button class="opt" data-delay="600" data-label="Veloce">🚀 Veloce</button>
+    </div>
+  </div>
+
+  <div class="btn-group">
+    <button class="btn btn-likes"    id="btnLikes">♥ Rimuovi Like</button>
+    <button class="btn btn-comments" id="btnComments">💬 Elimina Commenti</button>
+    <button class="btn btn-untag"    id="btnUntag">🔖 Rimuovi Tag post salvati</button>
+    <button class="btn btn-stop"     id="btnStop">⏹ Ferma</button>
+  </div>
+
+  <div class="log-header">Log</div>
+  <div class="log-box" id="logBox">
+    <div class="log-line info">Pronto. Scegli un'operazione.</div>
+  </div>
+
+</div>
+<script src="popup.js"></script>
+</body>
+</html>
